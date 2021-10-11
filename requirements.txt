@@ -1,0 +1,3 @@
+capmonster_python==1.3.0
+requests==2.25.1
+websocket_client==1.2.1

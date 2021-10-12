@@ -13,4 +13,4 @@
 <p align="center"> 300 Stars - Add phone verification  </p>
 
 <h1 align="center"> Contact </h1>
-<p align="center"> View my contact information on https://dropout.black/ or join https://discord.gg/protocol </p>
+<p align="center"> View my contact information on https://dropout.black/ </p>

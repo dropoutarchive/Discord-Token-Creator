@@ -1,16 +1,44 @@
-<h1 align="center"> Discord Token Creator </h1>
-<p align="center"> A discord token creator that uses the service capmonster for captcha solving and created unverified accounts! </p>
+<div id="top"></div>
+<p align="center">
+  <img src="https://img.shields.io/github/contributors/dropout1337/Discord-Token-Creator.svg?style=for-the-badge"/>
+  <img src="https://img.shields.io/github/forks/dropout1337/Discord-Token-Creator.svg?style=for-the-badge"/>
+  <img src="https://img.shields.io/github/stars/dropout1337/Discord-Token-Creator.svg?style=for-the-badge"/>
+  <img src="https://img.shields.io/github/issues/dropout1337/Discord-Token-Creator.svg?style=for-the-badge"/>
+  <img src="https://img.shields.io/github/license/dropout1337/Discord-Token-Creator.svg?style=for-the-badge"/>
+</p>
+  
+---------------------------------------
+  
+<br/>
+<div align="center">
+  <h2 align="center">Discord Token Creator</h3>
 
-<h1 align="center"> Features </h1>
-<p align="center"> Autojoin discord servers </p>
-<p align="center"> User friendly interface </p>
-<p align="center"> Proxy support (http/socks4/socks5) </p>
+  <p align="center">
+    A discord token creator that uses the service capmonster for captcha solving!
+    <br />
+    <br />
+    <a href="https://github.com/dropout1337/Discord-Token-Creator/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/dropout1337/Discord-Token-Creator/issues">Request Feature</a>
+  </p>
+</div>
+  
+---------------------------------------
 
-<h1 align="center"> Milestones </h1>
-<p align="center"> 50 Stars - HCaptcha bypass </p>
-<p align="center"> 100 Stars - Swap over to an asynchronous version </p>
-<p align="center"> 200 Stars - Add email verification  </p>
-<p align="center"> 300 Stars - Add phone verification  </p>
+### Features
+* Autojoin discord servers
+* User friendly interface
+* Proxy support (http/socks4/socks5)
 
-<h1 align="center"> Contact </h1>
-<p align="center"> View my contact information on https://dropout.black/ </p>
+---------------------------------------
+
+### Milestones
+* 50 Stars - Swap over to an asynchronous version
+* 100 Stars - HCaptcha bypass
+* 200 Stars - Add email verification
+* 300 Stars - Add phone verification 
+
+---------------------------------------
+
+### Contact
+View my contact information on my [website](https://dropout.black/)

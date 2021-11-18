@@ -100,7 +100,7 @@ class Discord:
 
     def _create_account(self, invite, captcha = None):
         json = {
-            "username": "dropout",
+            "username": os.urandom(15).hex(),
             "password": os.urandom(15).hex(),
             "email": "%s@dropout.black" % (os.urandom(15).hex()),
             "invite": invite,

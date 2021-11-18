@@ -36,7 +36,7 @@
 
 ---------------------------------------
 
-### Milestones
+### Milestones (On hold till delt with github support.)
 * 50 Stars - Swap over to an asynchronous version
 * 100 Stars - HCaptcha bypass
 * 200 Stars - Add email verification
@@ -46,3 +46,4 @@
 
 ### Contact
 View my contact information on my [website](https://dropout.black/)
+Or contact on discord, dropout#0420

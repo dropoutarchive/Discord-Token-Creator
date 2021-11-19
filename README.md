@@ -36,7 +36,7 @@
 
 ---------------------------------------
 
-### Milestones (On hold till delt with github support.)
+### Milestones
 * 50 Stars - Swap over to an asynchronous version
 * 100 Stars - HCaptcha bypass
 * 200 Stars - Add email verification

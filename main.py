@@ -1,37 +1,96 @@
 import os
-import time
+import sys
 import random
+import secrets
+import aiohttp
 import logging
-import requests
-import websocket
-import threading
-from json import dumps
-from getpass import getpass
-from capmonster_python import HCaptchaTaskProxyless
+import asyncio
+import tasksio
 
 logging.basicConfig(
     level=logging.INFO,
-    format="\u001b[36;1m[\u001b[0m\033[4mdropout.black\033[0m\u001b[36;1m]\u001b[0m %(message)s\u001b[0m"
+    format="\x1b[38;5;9m[\x1b[0m%(asctime)s\x1b[38;5;9m]\x1b[0m %(message)s\x1b[0m",
+    datefmt="%H:%M:%S"
 )
 
-class Discord:
+class Capmonster(object):
 
-    def __init__(self, apikey, proxy):
+    def __init__(self, client_key: str):
+        self.client_key = client_key
+        self.headers = {
+            "content-type": "application/json"
+        }
+
+    async def create_task(self):
+        try:
+            async with aiohttp.ClientSession(headers=self.headers) as client:
+                json = {
+                    "clientKey": self.client_key,
+                    "task": {
+                        "type": "HCaptchaTaskProxyless",
+                        "websiteURL": "https://discord.com/",
+                        "websiteKey": "f5561ba9-8f1e-40ca-9b5b-a0b3f719ef34",
+                        "minScore": 0.3
+                    }
+                }
+                async with client.post("https://api.capmonster.cloud/createTask", json=json) as response:
+                    json = await response.json(content_type=None)
+                    if json["errorId"] == 0:
+                        return json["taskId"]
+                    else:
+                        return await self.create_task()
+        except Exception:
+            return await self.create_task()
+
+    async def get_result(self, task_id: str):
+        try:
+            async with aiohttp.ClientSession(headers=self.headers) as client:
+                json = {
+                    "clientKey": self.client_key,
+                    "taskId": task_id
+                }
+                async with client.get("https://api.capmonster.cloud/getTaskResult", json=json) as response:
+                    json = await response.json(content_type=None)
+                    if json["errorId"] == 0:
+                        if json["status"] == "ready":
+                            return json["solution"]["gRecaptchaResponse"]
+                        else:
+                            return await self.get_result(task_id)
+                    else:
+                        return await self.get_result(task_id)
+        except Exception:
+            return await self.get_result(task_id)
+
+    async def start(self):
+        task = await self.create_task()
+        return await self.get_result(task)
+
+class Discord(object):
+
+    def __init__(self):
+        if sys.platform == "linux":
+            self.clear = lambda: os.system("clear")
+        else:
+            self.clear = lambda: os.system("cls")
+
+        self.tokens = []
+        self.timeout = aiohttp.ClientTimeout(3)
+
         with open("data/proxies.txt", encoding="utf-8") as f:
             self.proxies = [i.strip() for i in f]
 
-        self.proxy = proxy
+        self.client_key = input("\x1b[38;5;9m[\x1b[0m?\x1b[38;5;9m]\x1b[0m Capmonster apikey \x1b[38;5;9m->\x1b[0m ")
+        self.mode = input("\x1b[38;5;9m[\x1b[0m?\x1b[38;5;9m]\x1b[0m Proxyless/Proxy \x1b[38;5;9m->\x1b[0m ")
+        self.name_prefix = input("\x1b[38;5;9m[\x1b[0m?\x1b[38;5;9m]\x1b[0m Username prefix \x1b[38;5;9m->\x1b[0m ")
+        self.invite = input("\x1b[38;5;9m[\x1b[0m?\x1b[38;5;9m]\x1b[0m Invite \x1b[38;5;9m->\x1b[0m discord.gg/")
 
-        self.apikey = apikey
-        self.user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.16 Chrome/91.0.4472.164 Electron/13.4.0 Safari/537.36"
+        if self.mode.lower() == "proxyless":
+            self.use_proxies = False
+        else:
+            self.use_proxies = True
+            self.proxy_type = input("\x1b[38;5;9m[\x1b[0m?\x1b[38;5;9m]\x1b[0m Proxy type \x1b[38;5;9m->\x1b[0m ")
 
-        self.base_url = "https://discord.com/"
-        self.sitekey = "f5561ba9-8f1e-40ca-9b5b-a0b3f719ef34"
-
-        self.captcha = HCaptchaTaskProxyless(
-            client_key=self.apikey,
-            userAgent=self.user_agent
-        )
+        self.capmonster_client = Capmonster(client_key=self.client_key)
 
         self.headers = {
             "Host": "discord.com",
@@ -54,110 +113,46 @@ class Discord:
             "Cookie": "OptanonConsent=version=6.17.0; locale=th"
         }
 
-    def _get_captcha(self):
-        task_id = self.captcha.createTask(
-            website_url=self.base_url,
-            website_key=self.sitekey
-        )
-        logging.info("Created task (\u001b[36;1m%s\u001b[0m)" % (task_id))
-        try:
-            result = self.captcha.joinTaskResult(
-                taskId=task_id
-            )
-            if result != None:
-                logging.info("Solved captcha (\u001b[36;1m%s\u001b[0m)" % (result[:54]))
-                return result
-            else:
-                logging.info("Failed to solve captcha, retrying...")
-                return self._get_captcha()
-        except Exception:
-            logging.info("Failed to solve captcha, retrying...")
-            return self._get_captcha()
+        print()
 
-    def _websocket_connect(self, token):
-        ws = websocket.WebSocket()
-        ws.connect("wss://gateway.discord.gg/?encoding=json&v=9&compress=zlib-stream")
-        logging.info("Connected to gateway v9 (\u001b[36;1m%s%s\u001b[0m)" % (token[:32], "*"*27))
-        ws.send("{\"op\":2,\"d\":{\"token\":\"%s\",\"capabilities\":125,\"properties\":{\"os\":\"Windows\",\"browser\":\"Chrome\",\"device\":\"\",\"system_locale\":\"it-IT\",\"browser_user_agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36\",\"browser_version\":\"91.0.4472.124\",\"os_version\":\"10\",\"referrer\":\"\",\"referring_domain\":\"\",\"referrer_current\":\"\",\"referring_domain_current\":\"\",\"release_channel\":\"stable\",\"client_build_number\":89709,\"client_event_source\":null},\"presence\":{\"status\":\"online\",\"since\":0,\"activities\":[],\"afk\":false},\"compress\":false,\"client_state\":{\"guild_hashes\":{},\"highest_last_message_id\":\"0\",\"read_state_version\":0,\"user_guild_settings_version\":-1}}}" % (token))
-        logging.info("Sent connect payload (\u001b[36;1m%s%s\u001b[0m)" % (token[:32], "*"*27))
-        ack = {
-            "op": 1,
-            "d": None
+    async def create(self, captcha: str = None):
+        if not captcha: captcha = await self.capmonster_client.start()
+        payload = {
+            "username": "%s | %s" % (self.name_prefix, secrets.token_hex(5)),
+            "email": "%s@gmail.com" % (secrets.token_hex(5)),
+            "password": secrets.token_hex(10),
+            "invite": self.invite,
+            "consent": True,
+            "captcha_key": captcha
         }
-        ws.send(dumps(ack))
-        logging.info("Sent heartbeat (\u001b[36;1m%s%s\u001b[0m)" % (token[:32], "*"*27))
-
-        for x in range(15):
-            time.sleep(35)
-            try:
-                ws.send(dumps(ack))
-                logging.info("Sent heartbeat %s (\u001b[36;1m%s%s\u001b[0m)" % (x+1, token[:32], "*"*27))
-            except Exception:
-                break
-
-        ws.close()
-        logging.info("Closed websocket connection (\u001b[36;1m%s%s\u001b[0m)" % (token[:32], "*"*27))
-
-    def _create_account(self, invite, captcha = None):
-        json = {
-            "username": os.urandom(15).hex(),
-            "password": os.urandom(15).hex(),
-            "email": "%s@dropout.black" % (os.urandom(15).hex()),
-            "invite": invite,
-            "consent": True
-        }
-
-        if captcha == None:
-            json["captcha_key"] = self._get_captcha()
+        if self.use_proxies:
+            proxy = "%s://%s" % (self.proxy_type, random.choice(self.proxies))
         else:
-            json["captcha_key"] = captcha
-
-        if self.proxy["enabled"]:
-            proxies = {"https": "%s://%s" % (self.proxy["type"], random.choice(self.proxies))}
-        else:
-            proxies = None
-
+            proxy = None
         try:
-            r = requests.post("https://discord.com/api/v9/auth/register", json=json, headers=self.headers, proxies=proxies, timeout=5)
-            if r.status_code in (200, 201, 204):
-                token = r.json()["token"]
-                logging.info("Created account (\u001b[36;1m%s%s\u001b[0m)" % (token[:32], "*"*27))
-                with open("data/tokens.txt", "a+") as f:
-                    f.write("%s:%s\n" % (token, json["password"]))
-                    f.close()
-                threading.Thread(target=self._websocket_connect, args=(token,)).start()
-            elif "You are being rate limited." in r.text:
-                retry_after = r.json()["retry_after"]
-                logging.info("Failed to create account. (\u001b[36;1mratelimit for %s\u001b[0m)" % (retry_after))
-                time.sleep(retry_after)
-                self._create_account(invite, json["captcha_key"])
-            else:
-                logging.info("Failed to create account. (\u001b[36;1maccount_failure\u001b[0m)")
-                self._create_account(invite, json["captcha_key"])
+            async with aiohttp.ClientSession(headers=self.headers, timeout=self.timeout) as client:
+                async with client.post("https://discord.com/api/v9/auth/register", json=payload, proxy=proxy) as response:
+                    json = await response.json(content_type=None)
+                    if response.status == 201:
+                        logging.info(json)
+                        token = json["token"]
+                        logging.info("Successfully created \x1b[38;5;9m(\x1b[0m%s\x1b[38;5;9m)\x1b[0m" % (token))
+                        with open("data/tokens.txt", "a+") as f:
+                            f.write("%s\n" % (token))
+                    else:
+                        if "message" in await response.text():
+                            logging.info("%s \x1b[38;5;9m(\x1b[0m%s\x1b[38;5;9m)\x1b[0m" % (json["message"], response.status))
+                        else:
+                            logging.info("Failed to create account \x1b[38;5;9m(\x1b[0m%s\x1b[38;5;9m)\x1b[0m" % (response.status))
         except Exception:
-            logging.info("Failed to create account. (\u001b[36;1mproxy_failure\u001b[0m)")
-            self._create_account(invite, json["captcha_key"])
+            logging.info("Connection error \x1b[38;5;9m(\x1b[0m000\x1b[38;5;9m)\x1b[0m")
+            await self.create(captcha)
+
+    async def start(self):
+        async with tasksio.TaskPool(1_000) as pool:
+           while True:
+                await pool.put(self.create())
 
 if __name__ == "__main__":
-    threads = []
-
-    client = Discord(
-        apikey=getpass(prompt="\u001b[36;1m[\u001b[0m\033[4mdropout.black\033[0m\u001b[36;1m]\u001b[0m ApiKey (\u001b[36;1mcapmonster.cloud\u001b[0m) \u001b[36;1m->\u001b[0m "),
-        proxy={
-            "enabled": True,
-            "type": input("\u001b[36;1m[\u001b[0m\033[4mdropout.black\033[0m\u001b[36;1m]\u001b[0m Proxy type (\u001b[36;1mhttp/socks4/socks5\u001b[0m) \u001b[36;1m->\u001b[0m ")
-        }
-    )
-
-    invite = input("\u001b[36;1m[\u001b[0m\033[4mdropout.black\033[0m\u001b[36;1m]\u001b[0m Invite \u001b[36;1m->\u001b[0m discord.gg/")
-    amount = int(input("\u001b[36;1m[\u001b[0m\033[4mdropout.black\033[0m\u001b[36;1m]\u001b[0m Amount \u001b[36;1m->\u001b[0m "))
-    print()
-
-    for x in range(amount):
-        threads.append(threading.Thread(target=client._create_account, args=(invite,)).start())
-
-    for x in threads:
-        try:
-            x.join()
-        except Exception:
-            pass
+    client = Discord()
+    asyncio.get_event_loop().run_until_complete(client.start())

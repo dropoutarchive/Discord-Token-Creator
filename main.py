@@ -72,6 +72,8 @@ class Discord(object):
             self.clear = lambda: os.system("clear")
         else:
             self.clear = lambda: os.system("cls")
+       
+        self.clear()
 
         self.tokens = []
         self.timeout = aiohttp.ClientTimeout(3)
@@ -90,6 +92,8 @@ class Discord(object):
             self.use_proxies = True
             self.proxy_type = input("\x1b[38;5;9m[\x1b[0m?\x1b[38;5;9m]\x1b[0m Proxy type \x1b[38;5;9m->\x1b[0m ")
 
+        self.tasks = int(input("\x1b[38;5;9m[\x1b[0m?\x1b[38;5;9m]\x1b[0m Tasks \x1b[38;5;9m->\x1b[0m "))
+            
         self.capmonster_client = Capmonster(client_key=self.client_key)
 
         self.headers = {
@@ -149,7 +153,7 @@ class Discord(object):
             await self.create(captcha)
 
     async def start(self):
-        async with tasksio.TaskPool(1_000) as pool:
+        async with tasksio.TaskPool(self.tasks) as pool:
            while True:
                 await pool.put(self.create())
 

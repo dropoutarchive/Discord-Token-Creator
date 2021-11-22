@@ -37,9 +37,9 @@
 ---------------------------------------
 
 ### Milestones
-* 100 Stars - HCaptcha bypass
-* 200 Stars - Add email verification
-* 300 Stars - Add phone verification 
+* 100 Stars / 300 Followers - HCaptcha bypass
+* 200 Stars / 350 Followers - Add email verification
+* 300 Stars  / 400 Followers- Add phone verification 
 
 ---------------------------------------
 
